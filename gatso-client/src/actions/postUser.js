@@ -5,4 +5,10 @@ const setLoginUser = (authUser) => (dispatch) => {
   });
 };
 
-export { setLoginUser };
+const logoutUser = () => (dispatch) => {
+  dispatch({
+    type: "LOGOUT"
+  });
+};
+
+export { setLoginUser, logoutUser };

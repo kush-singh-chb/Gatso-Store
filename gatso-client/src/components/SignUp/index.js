@@ -6,14 +6,13 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import Link from '@material-ui/core/Link';
 import Grid from '@material-ui/core/Grid';
-import Image from '../img/sign-up.jpg'
-import Icon from '../img/google.svg'
+import Image from '../../img/sign-up.jpg'
+import Icon from '../../img/google.svg'
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
-import { auth } from '../firebase/firebaseConfig'
+import { auth } from '../../firebase'
 import { Container } from '@material-ui/core';
-import { connect } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
@@ -212,4 +211,4 @@ function SignUp() {
     );
 }
 
-export default connect(null, null)(SignUp)
+export default SignUp;

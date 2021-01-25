@@ -1,24 +1,23 @@
-import './App.css';
 import { useEffect } from "react"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
 import Sidebar from './Sidebar';
 import SignIn from './SignIn'
 import SignUp from './SignUp'
 import { connect } from "react-redux"
-import { setLoginUser } from '../actions/postUser'
-import { auth } from "../firebase/firebaseConfig"
+import { setLoginUser, logoutUser } from '../actions/postUser'
+import { auth } from "../firebase"
+import Home from "./Home"
 
-function App({ setLoginUser }) {
+function App({ setLoginUser, logoutUser }) {
   useEffect(() => {
     auth.onAuthStateChanged((authUser) => {
-      console.log(authUser)
       if (authUser !== null) {
         setLoginUser(authUser);
       } else {
-        setLoginUser(null);
+        logoutUser(null);
       }
     });
-  }, [setLoginUser]);
+  }, [setLoginUser, logoutUser]);
   return (
     <Router>
       <div className="App">
@@ -31,7 +30,7 @@ function App({ setLoginUser }) {
           </Route>
           <Route path="/">
             <Sidebar>
-              <div>Hello World</div>
+              <Home />
             </Sidebar>
           </Route>
         </Switch>
@@ -45,4 +44,4 @@ const mapStateToProps = (state) => {
     user: state.user,
   };
 };
-export default connect(mapStateToProps, { setLoginUser })(App);
+export default connect(mapStateToProps, { setLoginUser, logoutUser })(App);

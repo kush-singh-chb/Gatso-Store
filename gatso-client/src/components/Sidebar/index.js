@@ -17,12 +17,14 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailIcon from "@material-ui/icons/Mail";
-import { MenuItem, fade, InputBase, MenuList, Button, Paper, Popper, ClickAwayListener, Grow } from "@material-ui/core"
+import { MenuItem, fade, InputBase, MenuList, Button, Paper, Popper, ClickAwayListener, Grow, Card } from "@material-ui/core"
 import { Link, useHistory } from "react-router-dom";
 import SearchIcon from '@material-ui/icons/Search';
-import "./Sidebar.css"
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import { auth } from "../firebase/firebaseConfig";
+import { auth } from "../../firebase";
+import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
+import PopProduct from "../PopupBasket";
+import axios from "../../axios"
 
 const drawerWidth = 200;
 
@@ -139,6 +141,23 @@ const useStyles = makeStyles((theme) => ({
     toggleMenu: {
         color: theme.palette.spreadThis.text.main,
         textTransform: "capitalize"
+    },
+    basketIcon: {
+        marginLeft: "8px",
+    },
+    basketList: {
+        maxHeight: "500px",
+        maxWidth: "400px",
+        overflowY: "auto",
+        '&::-webkit-scrollbar': {
+            width: '0'
+        },
+        "& li": {
+            justifyContent: "center"
+        }
+    },
+    popperBtn: {
+        margin: "8px"
     }
 }));
 
@@ -147,9 +166,12 @@ function Sidebar({ children, user }) {
     const classes = useStyles();
     const theme = useTheme();
     const anchorRef = React.useRef(null);
+    const basketRef = React.useRef(null);
     const [openDrawer, setOpenDrawer] = useState(false);
-    const [toggleMenu, setToggleMenu] = useState(false)
+    const [toggleMenu, setToggleMenu] = useState(false);
+    const [toggleMiniBasket, setToggleMiniBasket] = useState(false)
     const prevOpen = React.useRef(toggleMenu);
+    const prevBasketOpen = React.useRef(toggleMiniBasket);
 
     React.useEffect(() => {
         if (prevOpen.current === true && toggleMenu === false) {
@@ -157,7 +179,13 @@ function Sidebar({ children, user }) {
         }
 
         prevOpen.current = toggleMenu;
-    }, [toggleMenu]);
+
+        if (prevBasketOpen.current === true && toggleMiniBasket === false) {
+            basketRef.current.focus();
+        }
+
+        prevBasketOpen.current = toggleMiniBasket;
+    }, [toggleMenu, toggleMiniBasket]);
 
     const handleToggle = () => {
         if (!user) {
@@ -165,6 +193,11 @@ function Sidebar({ children, user }) {
             return
         }
         setToggleMenu((prevOpen) => !prevOpen);
+        setToggleMiniBasket(false)
+    };
+    const handleBasketToggle = () => {
+        setToggleMiniBasket((prevBasketOpen) => !prevBasketOpen);
+        setToggleMenu(false);
     };
 
     const handleLogout = (e) => {
@@ -178,6 +211,14 @@ function Sidebar({ children, user }) {
         }
 
         setToggleMenu(false);
+    };
+
+    const handleBasketClose = (event) => {
+        if (basketRef.current && basketRef.current.contains(event.target)) {
+            return;
+        }
+
+        setToggleMiniBasket(false);
     };
 
     const handleListKeyDown = (event) => {
@@ -222,7 +263,6 @@ function Sidebar({ children, user }) {
                         />
                     </div>
                     <div>
-
                         <Button
                             ref={anchorRef}
                             aria-controls={toggleMenu ? 'menu-list-grow' : undefined}
@@ -233,7 +273,6 @@ function Sidebar({ children, user }) {
                             <AccountCircleIcon color="action" fontSize="large" />&nbsp;
                                 {(user && user.displayName) ? `Hello, ${user.displayName}` : `Hello,     Guest`}
                         </Button>
-
                         {user && <Popper open={toggleMenu} anchorEl={anchorRef.current} role={undefined} transition disablePortal>
                             {({ TransitionProps, placement }) => (
                                 <Grow
@@ -243,8 +282,8 @@ function Sidebar({ children, user }) {
                                     <Paper>
                                         <ClickAwayListener onClickAway={handleClose}>
                                             <MenuList autoFocusItem={toggleMenu} id="menu-list-grow" onKeyDown={handleListKeyDown}>
-                                                <MenuItem onClick={handleClose}>Profile</MenuItem>
-                                                <MenuItem onClick={handleClose}>My account</MenuItem>
+                                                <MenuItem>Profile</MenuItem>
+                                                <MenuItem>Orders</MenuItem>
                                                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
                                             </MenuList>
                                         </ClickAwayListener>
@@ -253,6 +292,50 @@ function Sidebar({ children, user }) {
                             )}
                         </Popper>}
                     </div>
+                    <Button
+                        ref={basketRef}
+                        aria-controls={toggleMenu ? 'menu-list-grow' : undefined}
+                        aria-haspopup="true"
+                        onClick={handleBasketToggle}
+                        className={classes.basketIcon}>
+                        <ShoppingCartIcon />0
+                    </Button>
+                    <Popper open={toggleMiniBasket} anchorEl={basketRef.current} role={undefined} transition disablePortal>
+                        {({ TransitionProps, placement }) => (
+                            <Grow
+                                {...TransitionProps}
+                                style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
+                            >
+                                <Paper>
+                                    <ClickAwayListener onClickAway={handleBasketClose}>
+                                        <MenuList className={classes.basketList} autoFocusItem={toggleMiniBasket} id="menu-list-grow" onKeyDown={handleListKeyDown}>
+                                            <MenuItem onClick={handleBasketClose}>
+                                                <PopProduct />
+                                            </MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                            <MenuItem onClick={handleBasketClose}><PopProduct /></MenuItem>
+                                        </MenuList>
+                                    </ClickAwayListener>
+                                    <Button variant="contained" color="primary" className={classes.popperBtn}>
+                                        Proceed To Checkout
+                                        </Button>
+                                    <Button variant="contained" color="secondary">
+                                        Clear
+                                        </Button>
+                                </Paper>
+                            </Grow>
+                        )}
+                    </Popper>
                 </Toolbar>
             </AppBar>
 
@@ -314,7 +397,7 @@ function Sidebar({ children, user }) {
 
 function mapStateToProps(state) {
     return {
-        user: state.user.user,
+        user: state.user,
     };
 }
 

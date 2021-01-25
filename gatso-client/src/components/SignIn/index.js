@@ -10,11 +10,11 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
-import Image from '../img/sign-in.jpg'
-import { auth } from '../firebase/firebaseConfig'
+import Image from '../../img/sign-in.jpg'
+import { auth } from '../../firebase'
 import clsx from 'clsx'
 import { useHistory } from 'react-router-dom';
-import Icon from '../img/google.svg';
+import Icon from '../../img/google.svg';
 import firebase from "firebase"
 
 
