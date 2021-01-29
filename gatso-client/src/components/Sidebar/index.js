@@ -25,6 +25,7 @@ import { auth } from "../../firebase";
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import PopProduct from "../PopupBasket";
 import axios from "../../axios"
+import AddIcon from '@material-ui/icons/Add';
 
 const drawerWidth = 200;
 
@@ -380,6 +381,13 @@ function Sidebar({ children, user }) {
                         </ListItem>
                     ))}
                 </List>
+                {user !== null && user.vendor && <Divider />}
+                {user !== null && user.vendor && <MenuItem button key={"Add Product"} component={Link} to={'/AddProduct'}>
+                    <ListItemIcon>
+                        <AddIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={"Add Product"} />
+                </MenuItem>}
             </Drawer>
             <main
                 className={clsx(classes.content, {

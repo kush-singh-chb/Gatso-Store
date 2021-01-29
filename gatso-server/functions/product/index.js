@@ -1,17 +1,29 @@
 const express = require("express");
-const route = express.Router();
+const cors = require("cors");
 const fs = require("fs")
 const { db, bucket } = require("../firebase")
 const { logger } = require("firebase-functions");
 const { v4: uuidv4 } = require("uuid")
 const Busboy = require("busboy");
+const { decodeIDToken } = require("../middleware")
+const fileMiddleware = require('express-multipart-file-parser')
+
+//App CONFIG
+const productApp = express();
+
+//MIDDLEWARE
+productApp.use(express.json());
+productApp.use(express.urlencoded({ extended: true }));
+productApp.use(fileMiddleware)
+productApp.use(cors({ origin: true }));
+productApp.use(decodeIDToken);
 
 
-
-
-
-route.post("/addProduct", (req, res) => {
+//API ROUTES
+productApp.post("/", (req, res) => {
   const busboy = new Busboy({ headers: req.headers })
+  res.set('Content-Type', 'application/json');
+
   if (req["currentUser"] == null) {
     logger.log("setting bad")
     res.status(400).send({ 'error': 'Unauthorized' })
@@ -21,12 +33,24 @@ route.post("/addProduct", (req, res) => {
   busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {
     data[fieldname] = val
   });
-  busboy.on('finish', () => {
+  busboy.on('finish', async () => {
     if (data['name'] === undefined || data['price'] === undefined || data["description"] === undefined
       || data["vendor"] === undefined || data['category'] === undefined || data['image'] === undefined) {
       res.status(400).send({ 'error': "Bad Request" })
       return;
     }
+    const vendorDoc = db.collection("vendor").doc(data["vendor"])
+    const vendor = await vendorDoc.get()
+    if (!vendor.exists) {
+      return res.status(400).send({ "error": "Vendor ID not found" })
+    }
+
+    const categoryDoc = db.collection("categories").doc(data["category"])
+    const category = await categoryDoc.get()
+    if (!category.exists) {
+      return res.status(400).send({ "error": "Category ID not found" })
+    }
+    data['category'] = category.data()
     data['createdOn'] = Date.now()
     data['updatedOn'] = Date.now()
     data['id'] = uuidv4()
@@ -34,21 +58,18 @@ route.post("/addProduct", (req, res) => {
     db.collection("products")
       .doc(data['id'])
       .set(data)
-      .then(response => Object.assign(data,response)).then((ndata) => {
+      .then(response => Object.assign(data, response)).then((ndata) => {
         res.status(200).send(ndata)
         return;
       }).catch(err => {
         res.status(400).send({ 'error': err })
         return;
       })
-
-
-
   });
   busboy.end(req.rawBody)
 })
 
-route.get("/getProduct/id=:id", (req, res) => {
+productApp.get("/:id", async (req, res) => {
   res.set('Content-Type', 'application/json');
 
   if (req["currentUser"] === null) {
@@ -56,12 +77,16 @@ route.get("/getProduct/id=:id", (req, res) => {
   }
   if (req.params.id === undefined) {
     res.status(400).send({ "error": "Bad Request" });
+    return;
   }
-  db.collection("products")
-    .doc(req.params.id).get()
-    .then(response => response.data())
+  await db.collection("products")
+    .doc(req.params.id)
+    .get().then(response => {
+      return response.data()
+    })
     .then(data => {
-      res.status(200).send(JSON.stringify(data))
+      logger.log(data)
+      res.status(200).send(data)
       return;
     }).catch(err => {
       res.status(400).send({ "error": err })
@@ -69,7 +94,7 @@ route.get("/getProduct/id=:id", (req, res) => {
     })
 })
 
-route.post("/uploadProductImage", (req, res) => {
+productApp.post("/uploadProductImage", (req, res) => {
   res.set('Content-Type', 'application/json');
   const busboy = new Busboy({ headers: req.headers });
   if (req["currentUser"] === null) {
@@ -115,9 +140,78 @@ route.post("/uploadProductImage", (req, res) => {
   busboy.end(req.rawBody);
 });
 
-route.get("/getAllProducts",(req,res)=>{
-  
+productApp.get("/", (req, res) => {
+  res.set('Content-Type', 'application/json');
+  if (req["currentUser"] === null) {
+    return res.status(401).send({ "error": "Unauthorized" });
+  }
+  var products = db.collection("products")
+  if (req.query.q !== undefined) {
+    products = products.where('name', '>=', req.query.q).where('name', '<=', req.query.q + '~');
+  }
+  if (req.query.orderBy !== undefined) {
+    products = products.orderBy(req.query.orderBy)
+  }
+  if (req.query.limit !== undefined) {
+    products = products.limit(parseInt(req.query.limit))
+  }
+  products.get().then(response => {
+    return response.docs.map(doc => doc.data())
+
+  })
+    .then(data => {
+      res.status(200).send(JSON.stringify(data))
+      return;
+    }).catch(err => {
+      res.status(400).send({ "error": err })
+      return;
+    })
 })
+
+productApp.put("/:id", (req, res) => {
+  res.set('Content-Type', 'application/json');
+  const busboy = new Busboy({ headers: req.headers })
+  if (req["currentUser"] == null) {
+    logger.log("setting bad")
+    return res.status(400).send({ 'error': 'Unauthorized' })
+  }
+
+  if (req.params.id == undefined) {
+    return res.status(400).send({ 'error': 'Bad Request' })
+  }
+  const data = {}
+  busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {
+    data[fieldname] = val
+  })
+  busboy.on('finish', async () => {
+    data['updatedOn'] = Date.now()
+    const productDoc = db.collection("products").doc(req.params.id)
+    const product = productDoc.get()
+    if (!(await product).exists) {
+      return res.status(404).send({ 'error': 'Product ID not Found' })
+    }
+    productDoc.update(data)
+      .then(() => {
+        productDoc.get()
+          .then(response => response.data())
+          .then(data => {
+            res.status(200).send(JSON.stringify(data))
+            return;
+          }).catch(err => {
+            res.status(400).send({ "error": err })
+            return;
+          })
+      })
+
+  })
+  busboy.end(req.rawBody)
+})
+
+productApp.put("/recentlyPurchased/:id", async (req, res) => {
+
+})
+
+//LISTEN COMMAND
 module.exports = {
-  route,
-};
+  productApp
+}

@@ -92,7 +92,6 @@ function SignUp() {
                 }).then(
                     history.push("/")
                 )
-
             }).catch((error) => {
                 console.log(error)
             });

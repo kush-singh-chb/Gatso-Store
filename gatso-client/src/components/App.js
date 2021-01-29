@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
 import Sidebar from './Sidebar';
 import SignIn from './SignIn'
@@ -8,16 +8,21 @@ import { setLoginUser, logoutUser } from '../actions/postUser'
 import { auth } from "../firebase"
 import Home from "./Home"
 
-function App({ setLoginUser, logoutUser }) {
+function App({ setLoginUser, logoutUser, user }) {
   useEffect(() => {
     auth.onAuthStateChanged((authUser) => {
+      console.log(authUser)
       if (authUser !== null) {
-        setLoginUser(authUser);
+        auth.currentUser.getIdTokenResult(true).then(response => {
+          authUser["vendor"] = response.claims.vendor != null ? response.claims.vendor : false
+          authUser["back_id"] = response.claims.back_id != null ? response.claims.back_id : null
+          setLoginUser(authUser);
+        })
       } else {
         logoutUser(null);
       }
     });
-  }, [setLoginUser, logoutUser]);
+  }, [setLoginUser, logoutUser, auth.onAuthStateChanged]);
   return (
     <Router>
       <div className="App">
@@ -29,7 +34,11 @@ function App({ setLoginUser, logoutUser }) {
             <SignIn />
           </Route>
           <Route path="/">
+            {user != null && user.vendor &&
+              <p>This is a vendor</p>
+            }
             <Sidebar>
+
               <Home />
             </Sidebar>
           </Route>
