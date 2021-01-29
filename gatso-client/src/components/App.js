@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
 import Sidebar from './Sidebar';
 import SignIn from './SignIn'
@@ -7,6 +7,7 @@ import { connect } from "react-redux"
 import { setLoginUser, logoutUser } from '../actions/postUser'
 import { auth } from "../firebase"
 import Home from "./Home"
+import axios from "../axios"
 
 function App({ setLoginUser, logoutUser, user }) {
   useEffect(() => {
@@ -22,7 +23,7 @@ function App({ setLoginUser, logoutUser, user }) {
         logoutUser(null);
       }
     });
-  }, [setLoginUser, logoutUser, auth.onAuthStateChanged]);
+  }, [setLoginUser, logoutUser]);
   return (
     <Router>
       <div className="App">
@@ -38,7 +39,6 @@ function App({ setLoginUser, logoutUser, user }) {
               <p>This is a vendor</p>
             }
             <Sidebar>
-
               <Home />
             </Sidebar>
           </Route>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { makeStyles, useTheme } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Image from '../../img/product.png'
-import { Button, Card, CardMedia, Grid, IconButton } from '@material-ui/core';
+import { Card, CardMedia, Grid, IconButton } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 
 const useStyles = makeStyles((theme) => ({
@@ -25,7 +25,6 @@ const useStyles = makeStyles((theme) => ({
 
 function PopProduct({ id, name, price, image }) {
     const classes = useStyles();
-    const theme = useTheme();
     return (
         <div>
             <Card className={classes.root}>

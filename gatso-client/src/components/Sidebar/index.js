@@ -17,14 +17,13 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailIcon from "@material-ui/icons/Mail";
-import { MenuItem, fade, InputBase, MenuList, Button, Paper, Popper, ClickAwayListener, Grow, Card } from "@material-ui/core"
+import { MenuItem, fade, InputBase, MenuList, Button, Paper, Popper, ClickAwayListener, Grow } from "@material-ui/core"
 import { Link, useHistory } from "react-router-dom";
 import SearchIcon from '@material-ui/icons/Search';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import { auth } from "../../firebase";
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import PopProduct from "../PopupBasket";
-import axios from "../../axios"
 import AddIcon from '@material-ui/icons/Add';
 
 const drawerWidth = 200;

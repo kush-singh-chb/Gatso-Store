@@ -114,7 +114,7 @@ vendorApp.put("/:id", (req, res) => {
         const vendorDoc = db.collection("vendor").doc(req.params.id)
         const vendor = await vendorDoc.get()
         if (!(await vendor).exists) {
-            return res.status(400).send({ "error": "Vendor ID not found" })
+            return res.status(400).send({ "message": "Vendor ID not found" })
         }
         vendorDoc.update(data)
             .then(() => {
@@ -124,7 +124,7 @@ vendorApp.put("/:id", (req, res) => {
                         res.status(200).send(JSON.stringify(data))
                         return;
                     }).catch(err => {
-                        res.status(400).send({ "error": err })
+                        res.status(400).send({ "message": err })
                         return;
                     })
             })

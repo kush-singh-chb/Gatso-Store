@@ -1,3 +1,4 @@
+const { logger } = require("firebase-functions");
 const { auth } = require("./firebase")
 
 async function decodeIDToken(req, res, next) {
@@ -10,7 +11,7 @@ async function decodeIDToken(req, res, next) {
             const decodedToken = await auth.verifyIdToken(idToken);
             req["currentUser"] = decodedToken;
         } catch (err) {
-            console.log(err);
+            logger.log(err);
         }
     }
     next();
