@@ -25,6 +25,7 @@ import { auth } from "../../firebase";
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import PopProduct from "../PopupBasket";
 import AddIcon from '@material-ui/icons/Add';
+import VendorIcon from "../../img/hand-shake.svg";
 
 const drawerWidth = 200;
 
@@ -161,7 +162,7 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-function Sidebar({ children, user }) {
+function Sidebar({ children, user, vendor }) {
     const history = useHistory()
     const classes = useStyles();
     const theme = useTheme();
@@ -227,7 +228,6 @@ function Sidebar({ children, user }) {
             setToggleMenu(false);
         }
     }
-
     return (
         <div className={classes.root}>
             <AppBar
@@ -380,13 +380,32 @@ function Sidebar({ children, user }) {
                         </ListItem>
                     ))}
                 </List>
-                {user !== null && user.vendor && <Divider />}
-                {user !== null && user.vendor && <MenuItem button key={"Add Product"} component={Link} to={'/AddProduct'}>
-                    <ListItemIcon>
-                        <AddIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={"Add Product"} />
-                </MenuItem>}
+                <Divider />
+                {(user != null && !vendor) ?
+                    <MenuItem button key={"Become a Vendor"} component={Link} to={'/vendor-signup'}>
+                        <ListItemIcon>
+                            <img src={VendorIcon} alt="React Logo" height="32px" width="23px" />
+                        </ListItemIcon>
+                        <ListItemText primary={"Become a Vendor"} />
+                    </MenuItem> : null
+                }
+                {user == null &&
+                    <MenuItem button key={"Join as Vendor"} component={Link} to={'/vendor-signup'}>
+                        <ListItemIcon>
+                            <img src={VendorIcon} alt="React Logo" height="32px" width="32px" />
+                        </ListItemIcon>
+                        <ListItemText primary={"Join as Vendor"} />
+                    </MenuItem>
+                }
+
+                {(user !== null && vendor) &&
+                    <MenuItem button key={"Add Product"} component={Link} to={'/AddProduct'}>
+                        <ListItemIcon>
+                            <AddIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={"Add Product"} />
+                    </MenuItem>
+                }
             </Drawer>
             <main
                 className={clsx(classes.content, {
@@ -405,6 +424,7 @@ function Sidebar({ children, user }) {
 function mapStateToProps(state) {
     return {
         user: state.user,
+        vendor: state.vendor
     };
 }
 

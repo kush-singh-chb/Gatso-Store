@@ -13,6 +13,9 @@ const theme = createMuiTheme({
         secondary: {
             main: '#FFEB3B',
         },
+        primaryVendor: {
+            main: "#1DA1F2"
+        },
         spreadThis: {
             text: {
                 main: '#FFFFFF',

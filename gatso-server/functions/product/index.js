@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require("uuid")
 const Busboy = require("busboy");
 const { decodeIDToken } = require("../middleware")
 const fileMiddleware = require('express-multipart-file-parser')
+const { body, param, validationResult } = require("express-validator")
 
 //App CONFIG
 const productApp = express();
@@ -49,65 +50,78 @@ productApp.get("/", (req, res) => {
     })
 })
 
-productApp.get("/id/:id", async (req, res) => {
-  res.set('Content-Type', 'application/json');
+productApp.get("/id/:id",
+  param('id').notEmpty().withMessage("Bad Request")
+  , async (req, res) => {
+    res.set('Content-Type', 'application/json');
 
-  if (req["currentUser"] === null) {
-    return res.status(401).send({ "message": "Unauthorized" });
-  }
-  if (req.params.id === undefined) {
-    res.status(400).send({ "message": "Bad Request" });
-    return;
-  }
-  await db.collection("products")
-    .doc(req.params.id)
-    .get().then(response => {
-      return response.data()
-    })
-    .then(data => {
-      logger.log(data)
-      res.status(200).send(data)
-      return;
-    }).catch(err => {
-      res.status(400).send({ "message": err })
-      return;
-    })
-})
-
-productApp.post("/", (req, res) => {
-  const busboy = new Busboy({ headers: req.headers })
-  res.set('Content-Type', 'application/json');
-  if (req["currentUser"] == null) {
-    logger.log("setting bad")
-    res.status(400).send({ 'error': 'Unauthorized' })
-    return
-  }
-  const data = {}
-  busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {
-    data[fieldname] = val
-  });
-  busboy.on('finish', async () => {
-    if (data['name'] === undefined || data['price'] === undefined || data["description"] === undefined
-      || data["vendor"] === undefined || data['category'] === undefined || data['image'] === undefined) {
-      res.status(400).send({ 'error': "Bad Request" })
-      return;
+    if (req["currentUser"] === null) {
+      return res.status(401).send({ "message": "Unauthorized" });
     }
-    const vendorDoc = db.collection("vendor").doc(data["vendor"])
+    const error = validationResult(req)
+    if (!error.isEmpty())
+      await db.collection("products")
+        .doc(req.params.id)
+        .get().then(response => {
+          return response.data()
+        })
+        .then(data => {
+          res.status(200).send(data)
+          return;
+        }).catch(err => {
+          res.status(400).send({ "message": err })
+          return;
+        })
+  })
+
+productApp.post("/",
+  body('name').notEmpty().custom((value, { req }) => {
+    db.collection("product").where('name', '==', value).get().then(response => {
+      logger.log(response.docs.length)
+      if (response.docs.length > 0) {
+        throw new Error('Product already present');
+      }
+      return true
+    }).then(() => { }).catch(error => {
+      throw new Error(error.message);
+    })
+    return true
+  }),
+  body('image').notEmpty(),
+  body('description').notEmpty(),
+  body('price').notEmpty().toInt(),
+  body('vendor').notEmpty(),
+  body('category').notEmpty(),
+  async (req, res) => {
+    res.set('Content-Type', 'application/json');
+    const errors = validationResult(req)
+    if (req["currentUser"] == null) {
+      res.status(400).send({ "message": 'Unauthorized' })
+      return
+    }
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const vendorDoc = db.collection("vendor").doc(req.body.vendor)
     const vendor = await vendorDoc.get()
     if (!vendor.exists) {
       return res.status(400).send({ "message": "Vendor ID not found" })
     }
 
-    const categoryDoc = db.collection("categories").doc(data["category"])
+    const categoryDoc = db.collection("categories").doc(req.body.category)
     const category = await categoryDoc.get()
     if (!category.exists) {
       return res.status(400).send({ "message": "Category ID not found" })
     }
-    data['category'] = category.data()
+    const data = {}
+    data['id'] = uuidv4()
+    data['name'] = req.body.name
+    data['image'] = req.body.image
+    data['price'] = req.body.price
+    data['vendor'] = vendor.ref
+    data['category'] = category.ref
     data['createdOn'] = Date.now()
     data['updatedOn'] = Date.now()
-    data['id'] = uuidv4()
-
     db.collection("products")
       .doc(data['id'])
       .set(data)
@@ -115,12 +129,10 @@ productApp.post("/", (req, res) => {
         res.status(200).send(ndata)
         return;
       }).catch(err => {
-        res.status(400).send({ 'error': err })
+        res.status(400).send({ "message": err })
         return;
       })
-  });
-  busboy.end(req.rawBody)
-})
+  })
 
 productApp.delete("/id/:id", (req, res) => {
   res.set('Content-Type', 'application/json');
@@ -146,27 +158,38 @@ productApp.delete("/id/:id", (req, res) => {
     })
 })
 
-productApp.put("/id/:id", (req, res) => {
-  res.set('Content-Type', 'application/json');
-  const busboy = new Busboy({ headers: req.headers })
-  if (req["currentUser"] == null) {
-    logger.log("setting bad")
-    return res.status(400).send({ 'error': 'Unauthorized' })
-  }
-
-  if (req.params.id == undefined) {
-    return res.status(400).send({ 'error': 'Bad Request' })
-  }
-  const data = {}
-  busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {
-    data[fieldname] = val
-  })
-  busboy.on('finish', async () => {
+productApp.put("/id/:id",
+  body("image").isURL()
+  , async (req, res) => {
+    res.set('Content-Type', 'application/json');
+    if (req["currentUser"] == null) {
+      logger.log("setting bad")
+      return res.status(400).send({ "message": 'Unauthorized' })
+    }
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    if (req.params.id == undefined) {
+      return res.status(400).send({ "message": 'Bad Request' })
+    }
+    const data = {}
+    for (const [key, value] in Object.entries(req.body)) {
+      data[key] = value
+    }
+    if (data['category'] != null) {
+      const categoryDoc = db.collection("categories").doc(req.body.category)
+      const category = await categoryDoc.get()
+      if (!category.exists) {
+        return res.status(400).send({ "message": "Category ID not found" })
+      }
+      data['category'] = category.data()
+    }
     data['updatedOn'] = Date.now()
     const productDoc = db.collection("products").doc(req.params.id)
     const product = productDoc.get()
     if (!(await product).exists) {
-      return res.status(404).send({ 'error': 'Product ID not Found' })
+      return res.status(404).send({ "message": 'Product ID not Found' })
     }
     productDoc.update(data)
       .then(() => {
@@ -180,10 +203,7 @@ productApp.put("/id/:id", (req, res) => {
             return;
           })
       })
-
   })
-  busboy.end(req.rawBody)
-})
 
 productApp.post("/uploadProductImage", (req, res) => {
   res.set('Content-Type', 'application/json');

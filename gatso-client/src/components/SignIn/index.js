@@ -69,6 +69,7 @@ const useStyles = makeStyles((theme) => ({
         color: "white",
         position: "relative",
         left: "39%",
+        marginBottom: theme.spacing(2)
     },
     icon: {
         color: "white",

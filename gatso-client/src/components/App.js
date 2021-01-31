@@ -7,23 +7,26 @@ import { connect } from "react-redux"
 import { setLoginUser, logoutUser } from '../actions/postUser'
 import { auth } from "../firebase"
 import Home from "./Home"
+import VendorDash from './VendorDash'
+import VendorSignUp from './VendorSignup'
+import { setVendor, unSetVendor } from "../actions/postVendor";
 import axios from "../axios"
 
-function App({ setLoginUser, logoutUser, user }) {
+
+function App({ setLoginUser, user, vendor, logoutUser, setVendor, unSetVendor }) {
   useEffect(() => {
     auth.onAuthStateChanged((authUser) => {
-      console.log(authUser)
       if (authUser !== null) {
         auth.currentUser.getIdTokenResult(true).then(response => {
-          authUser["vendor"] = response.claims.vendor != null ? response.claims.vendor : false
-          authUser["back_id"] = response.claims.back_id != null ? response.claims.back_id : null
+          (response.claims.vendor != null && response.claims.vendor) ? setVendor() : unSetVendor()
+          auth['back_id'] = response.claims.back_id != null ? response.claims.back_id : null;
           setLoginUser(authUser);
         })
       } else {
         logoutUser(null);
       }
     });
-  }, [setLoginUser, logoutUser]);
+  }, [setLoginUser, logoutUser, setVendor, unSetVendor]);
   return (
     <Router>
       <div className="App">
@@ -34,13 +37,18 @@ function App({ setLoginUser, logoutUser, user }) {
           <Route path="/sign-in">
             <SignIn />
           </Route>
+          <Route path="/vendor-signup">
+            <VendorSignUp />
+          </Route>
           <Route path="/">
-            {user != null && user.vendor &&
-              <p>This is a vendor</p>
+            {(user == null && !vendor) ?
+              <Sidebar>
+                <Home />
+              </Sidebar> :
+              <VendorDash>
+                <p>This is a vendor Dashboard</p>
+              </VendorDash>
             }
-            <Sidebar>
-              <Home />
-            </Sidebar>
           </Route>
         </Switch>
       </div>
@@ -51,6 +59,7 @@ function App({ setLoginUser, logoutUser, user }) {
 const mapStateToProps = (state) => {
   return {
     user: state.user,
+    vendor: state.vendor
   };
 };
-export default connect(mapStateToProps, { setLoginUser, logoutUser })(App);
+export default connect(mapStateToProps, { setLoginUser, logoutUser, unSetVendor, setVendor })(App);

@@ -37,7 +37,7 @@ categoryApp.post("/", (req, res) => {
     }).then(data => {
         return res.status(200).send(JSON.stringify(data))
     }).catch(err => {
-        return res.status(400).send({ 'error': err })
+        return res.status(400).send({ "message": err })
     })
 })
 
@@ -51,7 +51,7 @@ categoryApp.get('/', (req, res) => {
     }).then(data => {
         return res.status(200).send(data)
     }).catch(err => {
-        return res.status(400).send({ 'error': err })
+        return res.status(400).send({ "message": err })
     })
 })
 
@@ -99,7 +99,7 @@ categoryApp.delete('/id/:id', (req, res) => {
                 return res.status(202).send({ "message": "Deleted Category and all related Sub-Categories" })
             })
     }).catch(err => {
-        return res.status(400).send({ 'error': err.message })
+        return res.status(400).send({ "message": err.message })
     })
 })
 

@@ -6,6 +6,7 @@ const { decodeIDToken } = require("../middleware")
 const fileMiddleware = require('express-multipart-file-parser')
 const { logger } = require("firebase-functions");
 const cors = require("cors");
+const { validateEircode } = require("../util")
 const Busboy = require("busboy")
 
 
@@ -21,17 +22,20 @@ vendorApp.use(decodeIDToken);
 vendorApp.post("/", (req, res) => {
     res.set('Content-Type', 'application/json');
     if (req.currentUser === null) {
-        return res.status(400).send({ 'error': "Unauthorized" })
+        return res.status(400).send({ "message": "Unauthorized" })
     }
     const id = uuidv4()
     if (req.body.uid === null) {
-        return res.status(400).send({ 'error': 'Bad Request. UID required for this request' })
+        return res.status(400).send({ "message": 'Bad Request. UID required for this request' })
     }
     if (req.body.email === null) {
-        return res.status(400).send({ 'error': 'Bad Request. Email required for this request' })
+        return res.status(400).send({ "message": 'Bad Request. Email required for this request' })
     }
     if (req.body.eircode === null) {
-        return res.status(400).send({ 'error': 'Bad Request. EIR code required for this request' })
+        return res.status(400).send({ "message": 'Bad Request. EIR code required for this request' })
+    }
+    if (!validateEircode(req.body.eircode)) {
+        return res.status(400).send({ "message": "Eircode Invalid." })
     }
     auth.setCustomUserClaims(req.body.uid, { vendor: true, back_id: id }).then(response => {
         return response
@@ -47,17 +51,17 @@ vendorApp.post("/", (req, res) => {
         }
         db.collection("vendor").doc(id).set(data).then(response => Object.assign(response, data)).then(() => {
             return res.status(200).send(data)
-        }).catch(err => logger.log(err))
+        }).catch(err => logger.log(err.message))
     }).catch(err => {
-        return res.status(400).send({ 'error': "Unauthorized /n" + err })
+        return res.status(400).send({ "message": "Unauthorized. " + err.message })
     })
 
 })
 
-vendorApp.get("/", (req, res) => {
+vendorApp.get('/get', (req, res) => {
     res.set('Content-Type', 'application/json');
     if (req.currentUser === null) {
-        return res.status(400).send({ 'error': "Unauthorized" })
+        return res.status(400).send({ "message": "Unauthorized" })
     }
     const vendor = db.collection("vendor")
     if (req.query.orderBy !== null) {
@@ -72,18 +76,18 @@ vendorApp.get("/", (req, res) => {
     }).then(data => {
         return res.status(200).send(JSON.stringify(data))
     }).catch(err => {
-        return res.status(400).send(JSON.stringify(err))
+        return res.status(400).send(JSON.stringify(err.message))
     })
 
 })
 
-vendorApp.get("/:id", (req, res) => {
+vendorApp.get('id/:id', (req, res) => {
     res.set('Content-Type', 'application/json');
     if (req.currentUser === null) {
-        return res.status(400).send({ 'error': "Unauthorized" })
+        return res.status(400).send({ "message": "Unauthorized" })
     }
     if (req.params.id === null) {
-        return res.status(400).send({ 'error': 'ID required for this request.' })
+        return res.status(400).send({ "message": 'ID required for this request.' })
     }
     db.collection("vendor")
         .doc(req.params.id)
@@ -96,14 +100,14 @@ vendorApp.get("/:id", (req, res) => {
         })
 })
 
-vendorApp.put("/:id", (req, res) => {
+vendorApp.put("id/:id", (req, res) => {
     res.set('Content-Type', 'application/json');
     const busboy = new Busboy({ headers: req.headers })
     if (req.currentUser === null) {
-        return res.status(400).send({ 'error': "Unauthorized" })
+        return res.status(400).send({ "message": "Unauthorized" })
     }
     if (req.params.id === null) {
-        return res.status(400).send({ 'error': 'ID required for this request.' })
+        return res.status(400).send({ "message": 'ID required for this request.' })
     }
     const data = {}
     busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {

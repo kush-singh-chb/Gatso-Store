@@ -20,7 +20,7 @@
       "description": "Local emulator"
     },
     {
-      "url": "http://localhost:3001/gatso-2020/eu-west1/",
+      "url": "https://localhost:3001/gatso-2020/eu-west1/",
       "description": "Production"
     }
   ],
@@ -84,7 +84,7 @@
         "requestBody": {
           "description": "Product object that needs to be added to the store",
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Product_req"
               }
