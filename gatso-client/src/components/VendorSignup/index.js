@@ -6,15 +6,13 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import Link from '@material-ui/core/Link';
 import Grid from '@material-ui/core/Grid';
-import Image from '../../img/sign-up.jpg'
-import Icon from '../../img/google.svg'
+import Image from '../../img/store.jpg'
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import { auth } from '../../firebase'
 import { Container } from '@material-ui/core';
 import { useHistory } from 'react-router-dom';
-import firebase from "firebase"
 import axios from '../../axios';
 import { setVendor } from "../../actions/postVendor"
 import { connect } from 'react-redux';
@@ -24,8 +22,7 @@ const useStyles = makeStyles((theme) => ({
         backgroundImage: `url(${Image})`,
         backgroundRepeat: "no-repeat",
         backgroundSize: "cover",
-        height: "100vh",
-
+        height: "120vh",
     },
     paper: {
         marginTop: theme.spacing(8),
@@ -80,12 +77,17 @@ function SignUp({ setVendor }) {
     const history = useHistory()
     const classes = useStyles();
     const [fName, setFName] = useState("")
+    const [fNameError, setFNameError] = useState("")
+    const [lNameError, setLNameError] = useState("")
     const [lName, setLName] = useState("")
     const [email, setEmail] = useState("")
     const [eircode, setEircode] = useState("")
     const [eirError, setEirError] = useState("")
+    const [cNameError, setCNameError] = useState("")
     const [password, setPassword] = useState("")
     const [rNoti, setRNoti] = useState(false)
+    const [tcCheck, setTcCheck] = useState(false)
+    const [cName, setCName] = useState("")
 
 
     const handleEirCode = (e) => {
@@ -107,6 +109,30 @@ function SignUp({ setVendor }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
+        const error = false;
+        if (eirError !== '' || eircode === '') {
+            setEirError("Please provide EirCode")
+            error = true
+        }
+        if (cName === '') {
+            setCNameError("Please Provide a Company Name")
+            error = true
+        }
+        if (cName.length < 4) {
+            setCNameError("Please Provide a Longer Company Name")
+            error = true
+        }
+        if (fName === '') {
+            setFNameError("First Name Cannot be empty")
+            error = true
+        }
+        if (lName === '') {
+            setLNameError("Last Name Cannot be empty")
+            error = true
+        }
+        if (error) {
+            return;
+        }
         auth
             .createUserWithEmailAndPassword(email, password)
             .then((response) => {
@@ -116,9 +142,9 @@ function SignUp({ setVendor }) {
                     const bodyData = new FormData()
                     bodyData.append("uid", response.user.uid)
                     bodyData.append("email", response.user.email)
+                    bodyData.append("companyName", cName)
                     bodyData.append("eircode", eircode)
                     axios.post("/vendor", bodyData).then(response => {
-                        console.log(response)
                         if (response.status === 200) {
                             setVendor()
                             history.push("/")
@@ -135,36 +161,6 @@ function SignUp({ setVendor }) {
             });
     }
 
-    const googleSignIn = (e) => {
-        e.preventDefault()
-        console.log(eirError !== '' || eircode !== '')
-        if (eirError !== '' || eircode === '') {
-            setEirError("Please provide EirCode")
-            return;
-        } else {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then(response => {
-                console.log(response.user)
-                const bodyData = new FormData()
-                bodyData.append("uid", response.user.uid)
-                bodyData.append("email", response.user.email)
-                bodyData.append("eircode", eircode)
-                axios.post("/vendor", bodyData).then(response => {
-                    if (response.status === 200) {
-                        setVendor()
-                        history.push("/")
-                    } else {
-                        auth.signOut()
-                        alert(response.message)
-                    }
-                }).catch(error => {
-                    alert(error.message)
-                })
-            })
-        }
-
-    }
-
     return (
         <main className={classes.root}>
             <Container className={classes.paper} maxWidth="sm">
@@ -172,10 +168,35 @@ function SignUp({ setVendor }) {
                     <LockOutlinedIcon />
                 </Avatar>
                 <Typography component="h1" variant="h5">
-                    Sign up
+                    Sign up as Vendor
         </Typography>
                 <form className={classes.form} noValidate onSubmit={handleSubmit}>
                     <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <TextField
+                                value={cName}
+                                autoComplete="cName"
+                                name="Company Name"
+                                variant="outlined"
+                                required
+                                inputProps={{
+                                    minLength: 5
+                                }}
+                                error={cNameError !== ''}
+                                helperText={cNameError}
+                                fullWidth
+                                id="cName"
+                                label="Company Name"
+                                autoFocus
+                                onChange={(e) => {
+                                    if (e.target.value.length >= 4) {
+                                        setCNameError("")
+                                    }
+                                    setCName(e.target.value)
+                                }}
+                            />
+                        </Grid>
+
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 value={fName}
@@ -184,10 +205,15 @@ function SignUp({ setVendor }) {
                                 variant="outlined"
                                 required
                                 fullWidth
+                                error={fNameError !== ''}
+                                helperText={fNameError}
                                 id="firstName"
                                 label="First Name"
                                 autoFocus
-                                onChange={(e) => { setFName(e.target.value) }}
+                                onChange={(e) => {
+                                    setFNameError("")
+                                    setFName(e.target.value)
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -198,9 +224,14 @@ function SignUp({ setVendor }) {
                                 id="lastName"
                                 label="Last Name"
                                 name="lastName"
+                                error={lNameError !== ''}
+                                helperText={lNameError}
                                 autoComplete="lname"
                                 value={lName}
-                                onChange={(e) => { setLName(e.target.value) }}
+                                onChange={(e) => {
+                                    setLNameError("")
+                                    setLName(e.target.value)
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -211,7 +242,6 @@ function SignUp({ setVendor }) {
                                 id="email"
                                 label="Email Address"
                                 name="email"
-                                autoComplete="email"
                                 value={email}
                                 onChange={(e) => { setEmail(e.target.value) }}
                             />
@@ -222,7 +252,7 @@ function SignUp({ setVendor }) {
                                 required
                                 fullWidth
                                 inputProps={{
-                                    maxlength: 7
+                                    maxLength: 7
                                 }}
                                 id="eircode"
                                 label="EirCode"
@@ -243,7 +273,6 @@ function SignUp({ setVendor }) {
                                 label="Password"
                                 type="password"
                                 id="password"
-                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => { setPassword(e.target.value) }}
                             />
@@ -252,6 +281,12 @@ function SignUp({ setVendor }) {
                             <FormControlLabel
                                 control={<Checkbox color="primary" value={rNoti} onChange={(e) => { setRNoti(e.target.checked) }} />}
                                 label="I want to receive inspiration, marketing promotions and updates via email."
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControlLabel
+                                control={<Checkbox color="primary" value={tcCheck} onChange={(e) => { setTcCheck(e.target.checked) }} />}
+                                label="Agree to all the Terms &amp; Conditions."
                             />
                         </Grid>
                     </Grid>
@@ -264,18 +299,10 @@ function SignUp({ setVendor }) {
                     >
                         Sign Up
                     </Button>
-                    <Button
-                        variant="contained"
-                        className={classes.googleBtn}
-                        onClick={googleSignIn}
-                    >
-                        <img src={Icon} className={classes.icon} alt="googleIcon" />Google
-                    </Button>
-
                     <Grid container justify="flex-end">
                         <Grid item>
                             <Link className={classes.link}
-                                href="/sign-in" variant="body2">
+                                href="/vendor-signin" variant="body2">
                                 Already have an account? Sign in
                     </Link>
                         </Grid>

@@ -21,6 +21,7 @@ import { connect } from 'react-redux';
 import { auth } from '../../firebase';
 import { Button } from '@material-ui/core';
 import AddProductIcon from "../../img/add.svg"
+import MainIcon from "../../img/main.svg"
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
@@ -52,7 +53,7 @@ const useStyles = makeStyles((theme) => ({
     drawer: {
         width: drawerWidth,
         flexShrink: 0,
-        whiteSpace: 'nowrap',
+        whiteSpace: 'noWrap',
     },
     drawerOpen: {
         width: drawerWidth,
@@ -124,10 +125,10 @@ function VendorDash({ user }) {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap>
+                    <Typography variant="h6">
                         Vendor Dasboard: {user.displayName}
                     </Typography>
-                    <Button className={clsx(classes.session)} noWrap onClick={e => {
+                    <Button className={clsx(classes.session)} onClick={e => {
                         auth.signOut()
                     }}>SignOut</Button>
                 </Toolbar>
@@ -152,7 +153,10 @@ function VendorDash({ user }) {
                 </div>
                 <Divider />
                 <List>
-
+                    <ListItem button key="Main">
+                        <ListItemIcon><img src={MainIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
+                        <ListItemText primary="Main" />
+                    </ListItem>
                     <ListItem button key="Add Product">
                         <ListItemIcon><img src={AddProductIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
                         <ListItemText primary="Add Product" />

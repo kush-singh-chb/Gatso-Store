@@ -370,31 +370,21 @@ function Sidebar({ children, user, vendor }) {
                     ))}
                 </List>
                 <Divider />
-                <List>
-                    {["All mail", "Trash", "Spam"].map((text, index) => (
-                        <ListItem button key={text}>
-                            <ListItemIcon>
-                                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                            </ListItemIcon>
-                            <ListItemText primary={text} />
-                        </ListItem>
-                    ))}
-                </List>
-                <Divider />
-                {(user != null && !vendor) ?
-                    <MenuItem button key={"Become a Vendor"} component={Link} to={'/vendor-signup'}>
-                        <ListItemIcon>
-                            <img src={VendorIcon} alt="React Logo" height="32px" width="23px" />
-                        </ListItemIcon>
-                        <ListItemText primary={"Become a Vendor"} />
-                    </MenuItem> : null
-                }
+
                 {user == null &&
-                    <MenuItem button key={"Join as Vendor"} component={Link} to={'/vendor-signup'}>
+                    <MenuItem button key={"Join a Vendor"} component={Link} to={'/vendor-signup'}>
                         <ListItemIcon>
                             <img src={VendorIcon} alt="React Logo" height="32px" width="32px" />
                         </ListItemIcon>
-                        <ListItemText primary={"Join as Vendor"} />
+                        <ListItemText primary={"Join a Vendor"} />
+                    </MenuItem>
+                }
+                {user == null &&
+                    <MenuItem button key={"Sign as Vendor"} component={Link} to={'/vendor-signin'}>
+                        <ListItemIcon>
+                            <img src={VendorIcon} alt="React Logo" height="32px" width="32px" />
+                        </ListItemIcon>
+                        <ListItemText primary={"Sign as Vendor"} />
                     </MenuItem>
                 }
 

@@ -34,6 +34,9 @@ vendorApp.post("/", (req, res) => {
     if (req.body.eircode === null) {
         return res.status(400).send({ "message": 'Bad Request. EIR code required for this request' })
     }
+    if (req.body.company_name === null) {
+        return res.status(400).send({ "message": 'Bad Request. Company Name required for this request' })
+    }
     if (!validateEircode(req.body.eircode)) {
         return res.status(400).send({ "message": "Eircode Invalid." })
     }

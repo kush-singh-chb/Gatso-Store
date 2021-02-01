@@ -10,12 +10,10 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
-import Image from '../../img/sign-in.jpg'
+import Image from '../../img/store.jpg'
 import { auth } from '../../firebase'
 import clsx from 'clsx'
 import { useHistory } from 'react-router-dom';
-import Icon from '../../img/google.svg';
-import firebase from "firebase"
 
 
 
@@ -46,7 +44,6 @@ const useStyles = makeStyles((theme) => ({
     },
     avatar: {
         margin: theme.spacing(1),
-        backgroundColor: theme.palette.secondary.main,
     },
     form: {
         marginTop: theme.spacing(1),
@@ -54,33 +51,34 @@ const useStyles = makeStyles((theme) => ({
     input: {
         maxHeight: "50px",
     },
+    focused: {},
+    notchedOutline: {},
+    outlinedInput: {
+        '&$focused $notchedOutline': {
+            borderColor: theme.palette.primaryVendor.main
+        },
+    },
+    floatingLabelFocusStyle: {
+        "&.Mui-focused": {
+            color: theme.palette.primaryVendor.main
+        }
+    },
     submit: {
         margin: theme.spacing(3, 0, 2),
+        backgroundColor: theme.palette.primaryVendor.main,
+        "&:hover, &:focus": {
+            backgroundColor: theme.palette.primaryVendor.main,
+        }
+
     },
     link: {
         color: theme.palette.spreadThis.text.secondary
     },
-    googleBtn: {
-        backgroundColor: "#4285F4",
-        "&:hover": {
-            backgroundColor: "#4285F4"
-        },
-        fontWeight: "600",
-        color: "white",
-        position: "relative",
-        left: "39%",
-        marginBottom: theme.spacing(2)
-    },
-    icon: {
-        color: "white",
-        width: "20px",
-        height: "20px",
-        marginRight: theme.spacing(1)
-    }
 }));
 
-function SignIn() {
+function VendorSignIn() {
     const history = useHistory()
+    const [pageError, setPageError] = useState('')
     const classes = useStyles();
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -88,23 +86,10 @@ function SignIn() {
     const handleSignIn = (e) => {
         e.preventDefault()
         auth.signInWithEmailAndPassword(email, password).then((authRes) => {
-            auth.currentUser.getIdTokenResult(true).then(response => {
-                if (response.claims.vendor == undefined) {
-                    history.push("/")
-                } else {
-                    alert("Cannot Login Vendor User")
-                    auth.signOut()
-                }
-            })
-        }).catch((error) => {
-            console.log(error)
-        })
-    }
-    const googleSignIn = (e) => {
-        e.preventDefault()
-        var provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).then(result => {
             history.push("/")
+        }).catch((error) => {
+            console.log(error);
+            setPageError("User or Password Incorrect")
         })
     }
     return (
@@ -114,12 +99,23 @@ function SignIn() {
                     <LockOutlinedIcon />
                 </Avatar>
                 <Typography component="h1" variant="h5">
-                    Sign in
-                     </Typography>
+                    Sign in as Vendor
+                </Typography>
+                {(pageError !== '') ? <Typography color="error">{pageError}</Typography> : ''}
                 <Container>
                     <form className={classes.form} noValidate onSubmit={handleSignIn}>
                         <TextField
                             className={classes.input}
+                            InputProps={{
+                                classes: {
+                                    root: classes.outlinedInput,
+                                    focused: classes.focused,
+                                    notchedOutline: classes.notchedOutline,
+                                },
+                            }}
+                            InputLabelProps={{
+                                className: classes.floatingLabelFocusStyle,
+                            }}
                             variant="outlined"
                             margin="normal"
                             required
@@ -134,6 +130,16 @@ function SignIn() {
                         />
                         <TextField
                             className={classes.input}
+                            InputProps={{
+                                classes: {
+                                    root: classes.outlinedInput,
+                                    focused: classes.focused,
+                                    notchedOutline: classes.notchedOutline,
+                                },
+                            }}
+                            InputLabelProps={{
+                                className: classes.floatingLabelFocusStyle,
+                            }}
                             variant="outlined"
                             margin="normal"
                             required
@@ -153,26 +159,16 @@ function SignIn() {
                                     value={rememberMe}
                                     onChange={(e) => { setRememberMe(e.target.checked) }} />}
                             label="Remember me"
-                            className={classes.input} />
+                        />
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
-                            color="primary"
                             className={classes.submit}
                         >
                             Sign In
                         </Button>
-                        <Container style={{ textAlign: "center", marginBottom: "8px" }}>
-                            <i>---or---</i>
-                        </Container>
-                        <Button
-                            variant="contained"
-                            className={classes.googleBtn}
-                            onClick={googleSignIn}
-                        >
-                            <img src={Icon} className={classes.icon} alt="googleIcon" />Google
-                    </Button>
+
                         <Grid container>
                             <Grid item xs>
                                 <Link className={classes.link} onClick={() => { console.log("event reset") }} variant="body2">
@@ -180,7 +176,7 @@ function SignIn() {
                         </Link>
                             </Grid>
                             <Grid item>
-                                <Link className={classes.link} href="/sign-up" variant="body2">
+                                <Link className={classes.link} href="/vendor-signup" variant="body2">
                                     {"Don't have an account? Sign Up"}
                                 </Link>
                             </Grid>
@@ -192,4 +188,4 @@ function SignIn() {
     )
 }
 
-export default SignIn;
+export default VendorSignIn;

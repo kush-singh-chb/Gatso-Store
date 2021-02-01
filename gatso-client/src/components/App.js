@@ -9,8 +9,8 @@ import { auth } from "../firebase"
 import Home from "./Home"
 import VendorDash from './VendorDash'
 import VendorSignUp from './VendorSignup'
+import VendorSignIn from './VendorSignIn'
 import { setVendor, unSetVendor } from "../actions/postVendor";
-import axios from "../axios"
 
 
 function App({ setLoginUser, user, vendor, logoutUser, setVendor, unSetVendor }) {
@@ -18,7 +18,7 @@ function App({ setLoginUser, user, vendor, logoutUser, setVendor, unSetVendor })
     auth.onAuthStateChanged((authUser) => {
       if (authUser !== null) {
         auth.currentUser.getIdTokenResult(true).then(response => {
-          (response.claims.vendor != null && response.claims.vendor) ? setVendor() : unSetVendor()
+          (response.claims.vendor != undefined && response.claims.vendor) ? setVendor() : unSetVendor()
           auth['back_id'] = response.claims.back_id != null ? response.claims.back_id : null;
           setLoginUser(authUser);
         })
@@ -27,6 +27,22 @@ function App({ setLoginUser, user, vendor, logoutUser, setVendor, unSetVendor })
       }
     });
   }, [setLoginUser, logoutUser, setVendor, unSetVendor]);
+
+  let component = null
+  if (user == null) {
+    component = <Sidebar>
+      <Home />
+    </Sidebar>
+  } else if ((user != null && !vendor)) {
+    component = <Sidebar>
+      <Home />
+    </Sidebar>
+  } else {
+    component = <VendorDash>
+      <p>This is vendor Dashboard</p>
+    </VendorDash>
+  }
+
   return (
     <Router>
       <div className="App">
@@ -40,15 +56,11 @@ function App({ setLoginUser, user, vendor, logoutUser, setVendor, unSetVendor })
           <Route path="/vendor-signup">
             <VendorSignUp />
           </Route>
+          <Route path="/vendor-signin">
+            <VendorSignIn />
+          </Route>
           <Route path="/">
-            {(user == null && !vendor) ?
-              <Sidebar>
-                <Home />
-              </Sidebar> :
-              <VendorDash>
-                <p>This is a vendor Dashboard</p>
-              </VendorDash>
-            }
+            {component}
           </Route>
         </Switch>
       </div>
