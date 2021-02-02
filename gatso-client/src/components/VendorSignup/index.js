@@ -109,7 +109,7 @@ function SignUp({ setVendor }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        const error = false;
+        var error = false;
         if (eirError !== '' || eircode === '') {
             setEirError("Please provide EirCode")
             error = true

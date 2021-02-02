@@ -51,24 +51,9 @@ const useStyles = makeStyles((theme) => ({
     input: {
         maxHeight: "50px",
     },
-    focused: {},
-    notchedOutline: {},
-    outlinedInput: {
-        '&$focused $notchedOutline': {
-            borderColor: theme.palette.primaryVendor.main
-        },
-    },
-    floatingLabelFocusStyle: {
-        "&.Mui-focused": {
-            color: theme.palette.primaryVendor.main
-        }
-    },
+
     submit: {
         margin: theme.spacing(3, 0, 2),
-        backgroundColor: theme.palette.primaryVendor.main,
-        "&:hover, &:focus": {
-            backgroundColor: theme.palette.primaryVendor.main,
-        }
 
     },
     link: {
@@ -106,16 +91,7 @@ function VendorSignIn() {
                     <form className={classes.form} noValidate onSubmit={handleSignIn}>
                         <TextField
                             className={classes.input}
-                            InputProps={{
-                                classes: {
-                                    root: classes.outlinedInput,
-                                    focused: classes.focused,
-                                    notchedOutline: classes.notchedOutline,
-                                },
-                            }}
-                            InputLabelProps={{
-                                className: classes.floatingLabelFocusStyle,
-                            }}
+                            
                             variant="outlined"
                             margin="normal"
                             required
@@ -130,16 +106,7 @@ function VendorSignIn() {
                         />
                         <TextField
                             className={classes.input}
-                            InputProps={{
-                                classes: {
-                                    root: classes.outlinedInput,
-                                    focused: classes.focused,
-                                    notchedOutline: classes.notchedOutline,
-                                },
-                            }}
-                            InputLabelProps={{
-                                className: classes.floatingLabelFocusStyle,
-                            }}
+                            
                             variant="outlined"
                             margin="normal"
                             required
@@ -164,6 +131,7 @@ function VendorSignIn() {
                             type="submit"
                             fullWidth
                             variant="contained"
+                            color="primary"
                             className={classes.submit}
                         >
                             Sign In

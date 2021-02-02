@@ -10,6 +10,9 @@ async function decodeIDToken(req, res, next) {
         try {
             const decodedToken = await auth.verifyIdToken(idToken);
             req["currentUser"] = decodedToken;
+            if (decodeIDToken.vendor) {
+                req['vendor'] == true
+            }
         } catch (err) {
             logger.log(err);
         }

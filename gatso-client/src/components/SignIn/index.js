@@ -89,7 +89,7 @@ function SignIn() {
         e.preventDefault()
         auth.signInWithEmailAndPassword(email, password).then((authRes) => {
             auth.currentUser.getIdTokenResult(true).then(response => {
-                if (response.claims.vendor == undefined) {
+                if (response.claims.vendor === undefined) {
                     history.push("/")
                 } else {
                     alert("Cannot Login Vendor User")

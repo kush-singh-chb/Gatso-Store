@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
@@ -19,9 +19,12 @@ import InboxIcon from '@material-ui/icons/MoveToInbox';
 import MailIcon from '@material-ui/icons/Mail';
 import { connect } from 'react-redux';
 import { auth } from '../../firebase';
-import { Button } from '@material-ui/core';
+import { Button, CircularProgress } from '@material-ui/core';
 import AddProductIcon from "../../img/add.svg"
 import MainIcon from "../../img/main.svg"
+import Main from "../VendorMain/index"
+import VendorProduct from "../VendorProduct"
+import { setThemeUser } from '../../actions/postTheme';
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
@@ -34,7 +37,7 @@ const useStyles = makeStyles((theme) => ({
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
         }),
-        backgroundColor: theme.palette.primaryVendor.main
+
     },
     appBarShift: {
         marginLeft: drawerWidth,
@@ -88,13 +91,26 @@ const useStyles = makeStyles((theme) => ({
     session: {
         marginLeft: "auto",
         color: theme.palette.spreadThis.text.main
+    },
+    wrapper: {
+        position: "relative"
+    },
+    progressDiv: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
     }
+
 }));
 
-function VendorDash({ user }) {
+
+function VendorDash({ user, children, setThemeUser }) {
     const classes = useStyles();
     const theme = useTheme();
-    const [open, setOpen] = React.useState(false);
+    const [showProgess, setShowProgess] = useState(false)
+    const [open, setOpen] = useState(false);
+    const [component, setComponent] = useState(<Main setShowProgess={setShowProgess} />)
+
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -130,6 +146,7 @@ function VendorDash({ user }) {
                     </Typography>
                     <Button className={clsx(classes.session)} onClick={e => {
                         auth.signOut()
+                        setThemeUser()
                     }}>SignOut</Button>
                 </Toolbar>
             </AppBar>
@@ -153,13 +170,13 @@ function VendorDash({ user }) {
                 </div>
                 <Divider />
                 <List>
-                    <ListItem button key="Main">
+                    <ListItem button key="Main" onClick={() => { setComponent(<Main setShowProgess={setShowProgess} />) }}>
                         <ListItemIcon><img src={MainIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
                         <ListItemText primary="Main" />
                     </ListItem>
-                    <ListItem button key="Add Product">
+                    <ListItem button key="Product" onClick={() => { setComponent(<VendorProduct setShowProgess={setShowProgess} />) }}>
                         <ListItemIcon><img src={AddProductIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
-                        <ListItemText primary="Add Product" />
+                        <ListItemText primary="Product" />
                     </ListItem>
                     <ListItem button key="Orders">
                         <ListItemIcon><img src={AddProductIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
@@ -187,7 +204,10 @@ function VendorDash({ user }) {
             </Drawer>
             <main className={classes.content}>
                 <div className={classes.toolbar} />
-
+                <div className={classes.wrappers}>
+                    {showProgess && <CircularProgress className={classes.progressDiv} />}
+                    {component}
+                </div>
             </main>
         </div>
     );
@@ -200,4 +220,4 @@ function mapStateToProps(state) {
     };
 }
 
-export default connect(mapStateToProps, null)(VendorDash);
+export default connect(mapStateToProps, { setThemeUser })(VendorDash);

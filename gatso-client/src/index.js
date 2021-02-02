@@ -10,12 +10,11 @@ import theme from './theme'
 import store from "./hooks/UseLocalStorage"
 
 ReactDOM.render(
-  <ThemeProvider theme={theme}>
-    <Provider store={store}>
-      <CssBaseline />
-      <App />
-    </Provider>
-  </ThemeProvider>,
+
+  <Provider store={store}>
+    <CssBaseline />
+    <App />
+  </Provider>,
   document.getElementById('root')
 );
 

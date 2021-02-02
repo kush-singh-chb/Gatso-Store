@@ -7,7 +7,9 @@ const { v4: uuidv4 } = require("uuid")
 const Busboy = require("busboy");
 const { decodeIDToken } = require("../middleware")
 const fileMiddleware = require('express-multipart-file-parser')
-const { body, param, validationResult } = require("express-validator")
+const { body, param, validationResult } = require("express-validator");
+const { promises } = require("dns");
+const FirebaseFirestore = require("@google-cloud/firestore")
 
 //App CONFIG
 const productApp = express();
@@ -16,7 +18,8 @@ const productApp = express();
 productApp.use(express.json());
 productApp.use(express.urlencoded({ extended: true }));
 productApp.use(fileMiddleware)
-productApp.use(cors({ origin: true }));
+productApp.use(cors());
+
 productApp.use(decodeIDToken);
 
 
@@ -31,6 +34,9 @@ productApp.get("/", (req, res) => {
   if (req.query.q !== undefined) {
     products = products.where('name', '>=', req.query.q).where('name', '<=', req.query.q + '~');
   }
+  if (req.query.vendor !== undefined) {
+    products = products.where('vendor', '==', req.query.vendor)
+  }
   if (req.query.orderBy !== undefined) {
     products = products.orderBy(req.query.orderBy)
   }
@@ -40,14 +46,19 @@ productApp.get("/", (req, res) => {
   products.get().then(response => {
     return response.docs.map(doc => doc.data())
 
+  }).then(async data => {
+    for (var i in data) {
+      const category = (await db.collection('categories').doc(data[i]['category']).get()).data()
+      const vendor = (await db.collection('vendor').doc(data[i]['vendor']).get()).data()
+      data[i]['category'] = (category != null) ? category : "Not Found. Check Reference and Update"
+      data[i]['vendor'] = (vendor != null) ? vendor : "Not Found. Check Reference and Update"
+    }
+    res.status(200).send(JSON.stringify(data))
+    return;
+  }).catch(err => {
+    res.status(400).send({ "message": err.message })
+    return;
   })
-    .then(data => {
-      res.status(200).send(JSON.stringify(data))
-      return;
-    }).catch(err => {
-      res.status(400).send({ "message": err })
-      return;
-    })
 })
 
 productApp.get("/id/:id",
@@ -118,18 +129,18 @@ productApp.post("/",
     data['name'] = req.body.name
     data['image'] = req.body.image
     data['price'] = req.body.price
-    data['vendor'] = vendor.ref
-    data['category'] = category.ref
+    data['vendor'] = req.body.vendor
+    data['category'] = req.body.category
     data['createdOn'] = Date.now()
     data['updatedOn'] = Date.now()
     db.collection("products")
       .doc(data['id'])
       .set(data)
-      .then(response => Object.assign(data, response)).then((ndata) => {
+      .then(response => Object.assign(data, response)).then(async (ndata) => {
         res.status(200).send(ndata)
         return;
       }).catch(err => {
-        res.status(400).send({ "message": err })
+        res.status(400).send({ "message": err.message })
         return;
       })
   })
@@ -205,29 +216,30 @@ productApp.put("/id/:id",
       })
   })
 
-productApp.post("/uploadProductImage", (req, res) => {
+productApp.post("/uploadProductImages", (req, res) => {
   res.set('Content-Type', 'application/json');
   const busboy = new Busboy({ headers: req.headers });
-  if (req["currentUser"] === null) {
-    res.send({ "message": "Unauthorized" }).status(401).end();
-  } else if (req.files.length < 1) {
-    res.send({ "message": "Bad Request" }).sendStatus(400).end()
+  if (req["currentUser"] == null) {
+    return res.send({ "message": "Unauthorized" }).status(401).end();
+
   }
+  if (req.files.length < 1) {
+    return res.send({ "message": "Bad Request" }).sendStatus(400).end()
 
-
+  }
+  const fileMap = {}
+  const promises = []
   // Listen for event when Busboy finds a file to stream.
   busboy.on('file', function (fieldname, file, filename, encoding, mimetype) {
     // We are streaming! Handle chunks
     file.on('data', function (data) {
+
       fs.writeFileSync(`../uploads/${filename}`, Buffer.from(data, 'base64'), err => {
         if (err) {
-          res.send({ "message": "Writing Error" }).status(400).end();
+          res.send({ "message": "Writing Error" }).status(400)
+          return
         }
       })
-    });
-
-    // Completed streaming the file.
-    file.on('end', () => {
       const metadata = {
         metadata: {
           // This line is very important. It's to create a download token.
@@ -236,18 +248,38 @@ productApp.post("/uploadProductImage", (req, res) => {
         contentType: mimetype,
         cacheControl: 'public, max-age=31536000',
       };
+      fileMap[filename] = metadata
+    });
 
-      bucket.upload(`../uploads/${filename}`,
+    // Completed streaming the file.
+
+    file.on('end', async () => {
+      console.log('uploading')
+      promises.push(bucket.upload(`../uploads/${filename}`,
         {
-          metadata: metadata,
+          metadata: fileMap[filename],
           destination: `/ProductImages/${filename}`
         }).then(response => {
-          res.send({ "url": response[0].metadata.selfLink }).sendStatus(200).end()
+
+          return response[0]
+        }).then(fileObj => {
+          fileObj.makePublic(makePublicReponse => {
+            return makePublicReponse
+          })
+          return fileObj.metadata.mediaLink
         }).catch(err => {
-          res.send({ "message": "Uploading to Bucket" }).status(400).end();
-        })
-    });
+          return res.status(400).send({ 'message': "Unable to push to Storage" })
+        }))
+    })
   });
+  busboy.on('finish', () => {
+    Promise.all(promises).then(value => {
+      console.log(value)
+      return res.status(200).send({ url: value })
+    })
+
+  })
+
   busboy.end(req.rawBody);
 });
 
