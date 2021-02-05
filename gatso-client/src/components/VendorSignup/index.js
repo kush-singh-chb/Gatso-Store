@@ -93,9 +93,9 @@ function SignUp({ setVendor }) {
     const handleEirCode = (e) => {
         e.preventDefault();
         setEircode(e.target.value.trim().toUpperCase())
-        var pattern = '(?:^[AC-FHKNPRTV-Y][0-9]{2}|D6W)[ -]?[0-9AC-FHKNPRTV-Y]{4}$';
+        const pattern = '(?:^[AC-FHKNPRTV-Y][0-9]{2}|D6W)[ -]?[0-9AC-FHKNPRTV-Y]{4}$';
 
-        var reg = new RegExp(pattern, 'i');
+        const reg = new RegExp(pattern, 'i');
         //return the first Eircode
         if (eircode.length > 3) {
             if (reg.test(e.target.value.trim())) {
@@ -109,7 +109,7 @@ function SignUp({ setVendor }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        var error = false;
+        let error = false;
         if (eirError !== '' || eircode === '') {
             setEirError("Please provide EirCode")
             error = true
@@ -146,8 +146,8 @@ function SignUp({ setVendor }) {
                     bodyData.append("eircode", eircode)
                     axios.post("/vendor", bodyData).then(response => {
                         if (response.status === 200) {
-                            setVendor()
                             history.push("/")
+                            setVendor()
                         } else {
                             alert(response.message)
                         }

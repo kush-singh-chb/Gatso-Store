@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import {useEffect, useState} from "react"
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom"
 import Sidebar from './Sidebar';
 import SignIn from './SignIn'
@@ -10,7 +10,6 @@ import Home from "./Home"
 import VendorDash from './VendorDash'
 import VendorSignUp from './VendorSignup'
 import VendorSignIn from './VendorSignIn'
-import theme from '../theme'
 import vendorTheme from '../themeVendor'
 import { setVendor, unSetVendor } from "../actions/postVendor";
 import { setThemeUser, setThemeVendor } from "../actions/postTheme";
@@ -18,6 +17,9 @@ import { ThemeProvider } from "@material-ui/core";
 
 
 function App({ setLoginUser, user, vendor, theme, logoutUser, setVendor, unSetVendor, setThemeVendor, setThemeUser }) {
+
+  const [component, setComponent] = useState(null)
+
   useEffect(() => {
     auth.onAuthStateChanged((authUser) => {
       if (authUser !== null) {
@@ -30,29 +32,20 @@ function App({ setLoginUser, user, vendor, theme, logoutUser, setVendor, unSetVe
           }
           authUser['back_id'] = response.claims.back_id != null ? response.claims.back_id : null;
           setLoginUser(authUser);
+          if(response.claims.vendor !== undefined && response.claims.vendor){
+            setComponent(<VendorDash/>)
+          }
         })
       } else {
         logoutUser(null);
+        setComponent((<Sidebar>
+          <Home />
+        </Sidebar>))
       }
     });
-  }, [setLoginUser, logoutUser, setVendor, unSetVendor, setThemeUser, setThemeVendor]);
+  }, [setLoginUser, logoutUser, setVendor, unSetVendor, setThemeUser, setThemeVendor,setComponent]);
 
-  let component = null
 
-  if (user == null) {
-    component = <Sidebar>
-      <Home />
-    </Sidebar>
-  } else if ((user !== null && !vendor)) {
-    component = <Sidebar>
-      <Home />
-    </Sidebar>
-
-  } else {
-    component = <VendorDash>
-      <p>This is vendor Dashboard</p>
-    </VendorDash>
-  }
 
 
 

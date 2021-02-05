@@ -23,8 +23,9 @@ import { Button, CircularProgress } from '@material-ui/core';
 import AddProductIcon from "../../img/add.svg"
 import MainIcon from "../../img/main.svg"
 import Main from "../VendorMain/index"
-import VendorProduct from "../VendorProduct"
+import VendorCategory from "../VendorCategory"
 import { setThemeUser } from '../../actions/postTheme';
+import { Switch, BrowserRouter, Route, Link } from "react-router-dom";
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
@@ -107,9 +108,8 @@ const useStyles = makeStyles((theme) => ({
 function VendorDash({ user, children, setThemeUser }) {
     const classes = useStyles();
     const theme = useTheme();
-    const [showProgess, setShowProgess] = useState(false)
+    const [showProgress, setShowProgress] = useState(false)
     const [open, setOpen] = useState(false);
-    const [component, setComponent] = useState(<Main setShowProgess={setShowProgess} />)
 
 
     const handleDrawerOpen = () => {
@@ -142,7 +142,7 @@ function VendorDash({ user, children, setThemeUser }) {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6">
-                        Vendor Dasboard: {user.displayName}
+                        Vendor Dasboard: {user?.displayName}
                     </Typography>
                     <Button className={clsx(classes.session)} onClick={e => {
                         auth.signOut()
@@ -150,6 +150,7 @@ function VendorDash({ user, children, setThemeUser }) {
                     }}>SignOut</Button>
                 </Toolbar>
             </AppBar>
+            <BrowserRouter>
             <Drawer
                 variant="permanent"
                 className={clsx(classes.drawer, {
@@ -170,13 +171,13 @@ function VendorDash({ user, children, setThemeUser }) {
                 </div>
                 <Divider />
                 <List>
-                    <ListItem button key="Main" onClick={() => { setComponent(<Main setShowProgess={setShowProgess} />) }}>
+                    <ListItem button key="Main" component={Link} to={"/"}>
                         <ListItemIcon><img src={MainIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
                         <ListItemText primary="Main" />
                     </ListItem>
-                    <ListItem button key="Product" onClick={() => { setComponent(<VendorProduct setShowProgess={setShowProgess} />) }}>
+                    <ListItem button key="Category" component={Link} to={"/Category"}>
                         <ListItemIcon><img src={AddProductIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
-                        <ListItemText primary="Product" />
+                        <ListItemText primary="Category" />
                     </ListItem>
                     <ListItem button key="Orders">
                         <ListItemIcon><img src={AddProductIcon} alt="" className="src" height="22px" width="22px" /></ListItemIcon>
@@ -204,11 +205,15 @@ function VendorDash({ user, children, setThemeUser }) {
             </Drawer>
             <main className={classes.content}>
                 <div className={classes.toolbar} />
-                <div className={classes.wrappers}>
-                    {showProgess && <CircularProgress className={classes.progressDiv} />}
-                    {component}
+                <div className={classes.wrapper}>
+                    {showProgress && <CircularProgress className={classes.progressDiv} />}
+                <Switch>
+                    <Route path="/Category" render={() => <VendorCategory key={"Category"} setShowProgress={setShowProgress} />} />
+                    <Route path="/" render={() => <Main  key={"Main"} setShowProgress={setShowProgress} />} />
+                </Switch>
                 </div>
             </main>
+            </BrowserRouter>
         </div>
     );
 }

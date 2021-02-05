@@ -99,7 +99,7 @@ function SignUp() {
 
     const googleSignIn = (e) => {
         e.preventDefault()
-        var provider = auth.GoogleAuthProvider();
+        const provider = auth.GoogleAuthProvider();
         provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
         auth.languageCode = 'it';
         auth.signInWithPopup(provider).then(result => {

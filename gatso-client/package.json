@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^5.11.8",
     "@testing-library/react": "^11.2.2",
     "@testing-library/user-event": "^12.6.0",
+    "@types/react": "^17.0.1",
     "axios": "^0.21.1",
     "axios-debug-log": "^0.8.2",
     "firebase": "^8.2.1",
@@ -22,6 +23,8 @@
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",
     "thunk": "0.0.1",
+    "uuid": "^8.3.2",
+    "v4": "0.0.1",
     "web-vitals": "^0.2.4"
   },
   "scripts": {
@@ -47,6 +50,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-    
+  },
+  "devDependencies": {
+    "prop-types": "^15.7.2"
   }
 }

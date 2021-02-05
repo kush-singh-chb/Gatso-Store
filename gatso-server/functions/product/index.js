@@ -87,16 +87,14 @@ productApp.get("/id/:id",
 
 productApp.post("/",
   body('name').notEmpty().custom((value, { req }) => {
-    db.collection("product").where('name', '==', value).get().then(response => {
-      logger.log(response.docs.length)
-      if (response.docs.length > 0) {
-        throw new Error('Product already present');
+    return db.collection('products').where("name", '==', value).get().then(res => {
+      console.log(res.docs.length)
+      if (res.docs.length > 0) {
+        throw new Error('Product Already Present');
+      } else {
+        return true
       }
-      return true
-    }).then(() => { }).catch(error => {
-      throw new Error(error.message);
-    })
-    return true
+    }).then(() => { }).catch(err => {throw new Error(err)})
   }),
   body('image').notEmpty(),
   body('description').notEmpty(),
@@ -111,7 +109,7 @@ productApp.post("/",
       return
     }
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ 'message': errors.array() });
     }
     const vendorDoc = db.collection("vendor").doc(req.body.vendor)
     const vendor = await vendorDoc.get()

@@ -7,7 +7,7 @@ const fileMiddleware = require('express-multipart-file-parser')
 const { logger } = require("firebase-functions");
 const cors = require("cors");
 const Busboy = require("busboy");
-const { throws } = require("assert");
+const { body, validationResult } = require("express-validator");
 
 const categoryApp = express()
 
@@ -17,53 +17,89 @@ categoryApp.use(fileMiddleware)
 categoryApp.use(cors({ origin: true }));
 categoryApp.use(decodeIDToken);
 
-categoryApp.post("/", (req, res) => {
-    res.set('Content-Type', 'application/json');
-    if (req["currentUser"] == null) {
-        return res.status(401).send({ "message": "Unauthorized" });
-    }
-    if (req.body.name === undefined) {
-        return res.status(401).send({ "message": "Bad Request.\n Name Required." })
-    }
-    const id = uuidv4()
-    const data = {
-        id: id,
-        name: req.body.name,
-        createdOn: Date.now(),
-        featured: false
-    }
-    db.collection("categories").doc(id).set(data).then(response => {
-        return Object.assign(data, response)
-    }).then(data => {
-        return res.status(200).send(JSON.stringify(data))
-    }).catch(err => {
-        return res.status(400).send({ "message": err })
+categoryApp.post("/",
+    body('name').notEmpty().withMessage("Name Required for this Request").custom(value => {
+        return db.collection('categories').where('name', "==", value).get().then(res => {
+            if (res.docs.length > 0) {
+                throw new Error('Category already present.');
+            } else {
+                return true
+            }
+        }).then(res => { return res }).catch(err => { throw new Error(err) })
+    }),
+    body('vendor').notEmpty().withMessage("VendorID Required for this Request").custom(value => {
+        return db.collection('vendor').doc(value).get().then(res => {
+            if (!res.exists) {
+                throw new Error('Vendor Not Found');
+            } else {
+                return true
+            }
+        }).then(res => { return res }).catch(err => { throw new Error(err) })
     })
-})
+    , (req, res) => {
+        res.set('Content-Type', 'application/json');
+        if (req["currentUser"] === null) {
+            return res.status(401).send({ "message": "Unauthorized" });
+        }
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(400).send({ "message": errors.array() });
+        }
+        const id = uuidv4()
+        const data = {
+            id: id,
+            name: req.body.name,
+            vendor: req.body.vendor,
+            createdOn: Date.now(),
+            featured: false
+        }
+        db.collection("categories").doc(id).set(data).then(response => {
+            return Object.assign(data, response)
+        }).then(data => {
+            return res.status(200).send(JSON.stringify(data))
+        }).catch(err => {
+            return res.status(400).send({ "message": err })
+        })
+    })
 
-categoryApp.get('/', (req, res) => {
-    res.set('Content-Type', 'application/json');
-    if (req["currentUser"] == null) {
-        return res.status(401).send({ "message": "Unauthorized" });
-    }
-    db.collection("categories").get().then(response => {
-        return response.docs.map(doc => doc.data())
-    }).then(data => {
-        return res.status(200).send(data)
-    }).catch(err => {
-        return res.status(400).send({ "message": err })
+categoryApp.get('/',
+    body('vendor').optional({ nullable: true }).custom(value => {
+        return db.collection('vendor').doc(value).get().then(response => {
+            console.log(response.data);
+            if (!response.exists) {
+                throw new Error('Vendor Not Found');
+            } else {
+                return true
+            }
+        }).then(() => { }).catch(err => { throw new Error(err) })
+    }),
+    (req, res) => {
+        res.set('Content-Type', 'application/json');
+        if (req["currentUser"] == null) {
+            return res.status(401).send({ "message": "Unauthorized" });
+        }
+        var categoryCollection = db.collection("categories")
+        if (req.body.vendor !== undefined) {
+            categoryCollection = categoryCollection.where('vendor', '==', req.body.vendor)
+        }
+        categoryCollection.get().then(response => {
+            return response.docs.map(doc => doc.data())
+        }).then(data => {
+            return res.status(200).send(data)
+        }).catch(err => {
+            return res.status(400).send({ "message": err })
+        })
     })
-})
 
 categoryApp.get('/id/:id', (req, res) => {
     res.set('Content-Type', 'application/json');
     if (req["currentUser"] == null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
-    if (req.params.id === undefined) {
+    if (req.query.id === undefined) {
         return res.status(400).send({ "message": "Bad Request. ID required." })
     }
-    db.collection("categories").doc(req.params.id).get().then(response => {
+    db.collection("categories").doc(req.query.id).get().then(response => {
         if (!response.exists) {
             throw new Error("Category Not Found")
         }
@@ -81,15 +117,15 @@ categoryApp.delete('/id/:id', (req, res) => {
     if (req['currentUser'] == null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
-    if (req.params.id === undefined) {
+    if (req.query.id === undefined) {
         return res.status(400).send({ "message": "Bad Request. ID required." })
     }
 
-    db.collection("categories").doc(req.params.id).delete().then(response => {
+    db.collection("categories").doc(req.query.id).delete().then(response => {
         logger.log(response)
         return response
     }).then(() => {
-        db.collection("sub-categories").where("category_id", "==", req.params.id).get()
+        db.collection("sub-categories").where("category_id", "==", req.query.id).get()
             .then(async (response) => {
                 const batch = db.batch()
                 response.docs.forEach(doc => {
@@ -105,7 +141,7 @@ categoryApp.delete('/id/:id', (req, res) => {
 
 categoryApp.post("/subcategory", async (req, res) => {
     res.set('Content-Type', 'application/json');
-    if (req["currentUser"] == null) {
+    if (req["currentUser"] === null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
     if (req.body.category_id === undefined) {
@@ -134,13 +170,14 @@ categoryApp.post("/subcategory", async (req, res) => {
 
 categoryApp.get("/subcategory/id/:id", (req, res) => {
     res.set('Content-Type', 'application/json');
+
     if (req['currentUser'] == null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
-    if (req.params.id === undefined) {
+    if (req.query.id === undefined) {
         return res.status(401).send({ "message": "Bad Request. ID Required" });
     }
-    db.collection("sub-categories").doc(req.params.id).get()
+    db.collection("sub-categories").doc(req.query.id).get()
         .then(response => {
             if (!response.exists) {
                 throw new Error("Sub-Category Not Found")
@@ -155,15 +192,19 @@ categoryApp.get("/subcategory/id/:id", (req, res) => {
 })
 
 categoryApp.get('/subcategory', (req, res) => {
-
     res.set('Content-Type', 'application/json');
-    if (req['currentUser'] == null) {
+    if (req['currentUser'] === null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
-    db.collection("sub-categories").get()
+    let collection = db.collection("sub-categories")
+    if(req.query.category_id !== undefined){
+        logger.log(req.query.category_id)
+        collection = collection.where("category_id",'==',req.query.category_id)
+    }
+    collection.get()
         .then(response => {
             if (response.docs === null) {
-                throw new Error("Sub-Category Not Found")
+                return JSON.stringify([])
             }
             return response.docs.map(doc => doc.data())
         })
@@ -179,10 +220,10 @@ categoryApp.delete("/subcategory/id/:id", async (req, res) => {
     if (req['currentUser'] == null) {
         return res.status(401).send({ "message": "Unauthorized" });
     }
-    if (req.params.id === undefined) {
+    if (req.query.id === undefined) {
         return res.status(401).send({ "message": "Bad Request. ID Required" });
     }
-    db.collection("sub-categories").doc(req.params.id).delete()
+    db.collection("sub-categories").doc(req.query.id).delete()
         .then(() => {
             return res.status(204).send({ "message": "OK" })
         }).catch(err => {
